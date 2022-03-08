@@ -7,12 +7,15 @@
         <input @keyup.enter='searchedMoviesHandler' type='text' placeholder='Search' v-model.lazy='searchInput'/>
         <button @click='clearSearch' v-show="searchInput !== ''" class='button'>Clear Search</button>
       </div>
+    <!--loading-->
+    <Loading v-if='pending'/>
     <!--Movies-->
-    <div class='container movies'>
+    <div v-else class='container movies'>
       <div v-if="searchInput !== ''" id='searched-movies-grid' class='movies-grid'>
         <div class='movie' v-for='(movie, index) in searchedMovies' :key='index'>
           <div class='movie-img'>
-            <img :src="`https://image.tmdb.org/t/p/w500/${movie.poster_path}`" alt=''/>
+            <span v-if='movie.poster_path === null'></span>
+            <img v-else :src="`https://image.tmdb.org/t/p/w500/${movie.poster_path}`" alt=''/>
             <p class='review'>{{movie.vote_average}}</p>
             <p class='overview'>{{movie.overview}}</p>
           </div>
@@ -63,11 +66,29 @@
 import axios from 'axios'
 export default {
   name: 'IndexPage',
+  head(){
+    return {
+      title: 'Movie App - latest streaming movie info',
+      meta: [
+        {
+          hid: 'description',
+          name: 'description',
+          content: 'Get all the latest streaming movies in theaters & online'
+        },
+        {
+          hid: 'keywords',
+          name: 'keywords',
+          content: 'movies, stream, streaming'
+        }
+      ]
+    }
+  },
   data() {
     return {
       movies: [],
       searchedMovies: [],
-      searchInput: ''
+      searchInput: '',
+      pending: false
     }
   },
   mounted() {
@@ -78,18 +99,22 @@ export default {
   // },
   methods: {
     async getMovies(){
+      this.pending = true
       const data = axios.get('https://api.themoviedb.org/3/movie/now_playing?api_key=6fe0fb6f810abf90040a6895dc505a8e&language=en-US&page=1')
       const result = await data
       result.data.results.forEach(movie=>{
         this.movies.push(movie)
       })
+      this.pending = false
     },
     async searchedMoviesHandler() {
+      this.pending = true
       const data = axios.get(`https://api.themoviedb.org/3/search/movie?api_key=6fe0fb6f810abf90040a6895dc505a8e&language=en-US&page=1&query=${this.searchInput}`)
       const result = await data
       result.data.results.forEach(movie=>{
         this.searchedMovies.push(movie)
       })
+      this.pending = false
     },
     clearSearch(){
       this.searchInput = ''
@@ -159,10 +184,16 @@ export default {
             }
           }
 
-          img {
+          img,
+          span{
             display: block;
             width: 100%;
             height: 100%;
+          }
+          span {
+            background-color: #808080b3;
+            width: 318px;
+            height: 477px;
           }
 
           .review {
